@@ -80,3 +80,91 @@ people[-1][0]
 
 **字段标签(Field labels)**
 
+通过在列表中的位置来访问字段通常需要我们来记住每一个位置所代表的字段的含义，即代码中会经常出现一些幻数。为了更好地让人理解代码，通过名称和值关联通常会更好。
+
+通常使用内建函数 `range` 来完成名称和位置的关联：
+```python
+NAME, AGE, PAY = range(3)
+bob = ['Bob Smith', 42, 10000]
+PAY, bob[PAY] # (2, 10000)
+```
+当记录的结构发生变化时，需要同步更新 `range` 赋值。因为它们没有直接关联，所以名称和记录可能随着时间的推移而不同步并需要维护步骤。此外，由于字段名称是独立变量，因此没有从记录列表直接映射回其字段名称的方法。 例如，原始记录列表无法在格式化显示中使用字段名称标记其值，`bob.index(42)` 的值是 1，而不是 AGE。
+
+**使用字典**
+
+上述以列表为基础的数据存储可以实现功能，但是需要以搜索字段名称的性能作为代价。内建对象字典可以做得更好：
+```python
+bob = {'name': 'Bob Smith', 'age': 42, 'pay': 30000, 'job': 'dev'}
+sue = {'name': 'Sue Jones', 'age': 45, 'pay': 40000, 'job': 'hdw'}
+```
+此时字段名称和值会自动的建立映射，它也使我们接下来的代码更易理解和有价值。我们不需要记住字段名称在其中的偏移，也不需要在新增字段值时更新和维护一组 `range`，这些交给字典自身的特性即可。
+```python
+bob['name'], sue['pay'] # ('Bob Smith', 40000)
+bob['name'].split()[-1] # 'Smith'
+```
+由于字段现在可以通过 `key` 访问，所以对于那些阅读代码的人来说，这些字段更有意义。
+
+**其他构建字典的方式**
+
+1. 使用构造函数
+```python
+bob = dict(name='Bob Smith', age=42, pay=30000, job='dev')
+```
+
+2. 逐个赋值
+```python
+sue = {}
+sue['name'] = 'Sue Jones'
+sue['age'] = 45
+sue['pay'] = 40000
+sue['job'] = 'hdw'
+```
+
+3. 使用内建函数`zip`
+```python
+names = ['name', 'age', 'pay', 'job']
+values = ['Sue Jones', 45, 40000, 'hdw']
+list(zip(names, values)) # [('name', 'Sue Jones'), ('age', 45), ('pay', 40000), ('job', 'hdw')]
+dict(zip(names, values)) # {'job': 'hdw', 'pay': 40000, 'age': 45, 'name': 'Sue Jones'}
+```
+
+4. 初始化一个空字典
+```python
+fields = ('name', 'age', 'job', 'pay')
+record = dict.fromkeys(fields, '?')
+record # {'job': '?', 'pay': '?', 'age': '?', 'name': '?'}
+```
+
+**字典组成的列表**
+
+上面介绍了使用字典构成单条记录，这里仍然使用列表作为记录的数据路，只要我们不需要通过key来访问顶层的记录：
+```python
+bob = {'name': 'Bob Smith', 'age': 42, 'pay': 30000, 'job': 'dev'}
+sue = {'name': 'Sue Jones', 'age': 45, 'pay': 40000, 'job': 'hdw'}
+
+people = [bob, sue]
+for person in people:
+    print(person['name'], person['pay'], sep=', ')
+
+# Bob Smith, 30000
+# Sue Jones, 40000
+
+for person in people:
+    if person['name'] == 'Sue Jones': # fetch sue's pay
+        print(person['pay'])
+
+# 40000
+```
+使用迭代工具：
+```python
+names = [person['name'] for person in people]
+list(map((lambda x: x['name']), people))
+sum(person['pay'] for person in people)
+```
+即使目前在内存对象上运行，列表解析和按需生成器表达式可以处理SQL查询：
+```python
+[rec['name'] for rec in people if rec['age'] >= 45] 
+
+[(rec['age'] ** 2 if rec['age'] >= 45 else rec['age']) for rec in people] # [42, 2025]
+```
+
