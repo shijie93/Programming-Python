@@ -168,3 +168,15 @@ sum(person['pay'] for person in people)
 [(rec['age'] ** 2 if rec['age'] >= 45 else rec['age']) for rec in people] # [42, 2025]
 ```
 
+**嵌套结构**
+
+python中的所有复合数据类型都支持互相嵌套任意我们喜欢的深度，我们简单的构建相当复杂格式的数据结构。Python可以完成构建组件，链接内存结构并且后来回收他们的空间。下面的例子通过嵌套字典，列表和元祖在另一个字典中：
+```python
+bob2 = {'name': {'first': 'Bob', 'last': 'Smith'},
+        'age': 42,
+        'job': ['software', 'writing'],
+        'pay': (40000, 50000)}
+
+bob2['name']['last'] # 'Smith'
+```
+
