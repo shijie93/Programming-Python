@@ -178,5 +178,66 @@ bob2 = {'name': {'first': 'Bob', 'last': 'Smith'},
         'pay': (40000, 50000)}
 
 bob2['name']['last'] # 'Smith'
+bob2['job'].append('janitor')
 ```
+
+**字典的字典**
+
+我们可以使用字典嵌套字典，外层字典是数据库，而嵌套的是在它内部的记录。基于字典的数据库不单是一个简单的记录列表，而是允许我们通过 `key` 来存储和检索记录。
+```python
+bob = {'name': 'Bob Smith', 'age': 42, 'pay': 30000, 'job': 'dev'}
+sue = {'name': 'Sue Jones', 'age': 45, 'pay': 40000, 'job': 'hdw'}
+
+db = {}
+db['bob'] = bob
+db['sue'] = sue
+
+pprint.pprint(db) # pprint 可以输出格式优美的内容
+
+for key in db:
+    print(key, '=>', db[key]['name'])
+
+# bob => Bob Smith
+# sue => Sue Jones
+```
+也可以直接访问字典的值
+```python
+for record in db.values():
+    print(record['pay'])
+
+# 30000
+# 40000
+```
+此时的数据仍存在于内存中。
+
+## Step 2:持续存储记录
+到目前为止，我们已经解决了基于字典的记录数据库的表示方式，并且我们一直在回顾一些Python数据结构的概念。 如前所述，目前为止我们所看到的对象都是临时的，它们都存在于内存中，一旦我们退出Python或创建它们的Python程序，它们就会消失。 为了让记录持久，他们需要存储在某种文件中。
+
+### 2.1使用格式化文件
+一种存储我们数据的方式是将所有的内容以一定的格式保存在一个文本文件中。
+
+**测试数据脚本**
+
+我们首先来写一个脚本来初始化我们将要存储的数据：
+```python
+# initdata.py
+# initialize data to be stored in files, pickles, shelves
+# records
+bob = {'name': 'Bob Smith', 'age': 42, 'pay': 30000, 'job': 'dev'}
+sue = {'name': 'Sue Jones', 'age': 45, 'pay': 40000, 'job': 'hdw'}
+tom = {'name': 'Tom', 'age': 50, 'pay': 0, 'job': None}
+
+# database
+db = {}
+db['bob'] = bob
+db['sue'] = sue
+db['tom'] = tom
+
+if __name__ == '__main__': # when run as a script
+    for key in db:
+        print(key, '=> ', db[key])
+```
+通常，当单独运行 initdata.py 时，`__name__ == '__main__'` 表现为 true。当这个文件被调用时，表现为false，通常这方便于我们进行模块调试。
+
+**文件名称约定**
 
