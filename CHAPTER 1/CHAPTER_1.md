@@ -239,5 +239,102 @@ if __name__ == '__main__': # when run as a script
 ```
 通常，当单独运行 initdata.py 时，`__name__ == '__main__'` 表现为 true。当这个文件被调用时，表现为false，通常这方便于我们进行模块调试。
 
-**文件名称约定**
+**数据格式脚本**
 
+现在，我们所要做的就是将所有这些内存数据存储在一个文件内。 有很多方法可以实现这一点，最基本的一种是一次写入一段数据，每次我们可以在重新加载时使用分隔符来分开数据：
+```python
+"""
+Save in-memory database object to a file with custom formatting;
+assume 'endrec.', 'enddb.', and '=>' are not used in the data;
+assume db is dict of dict; warning: eval can be dangerous - it
+runs strings as code; could also eval() record dict all at once;
+could also dbfile.write(key + '\n') vs print(key, file=dbfile);
+"""
+dbfilename = 'people-file'
+ENDDB = 'enddb.'
+ENDREC = 'endrec.'
+RECSEP = '=>'
+
+
+def storeDbase(db, dbfilename=dbfilename):
+    "formatted dump of database to flat file"
+    dbfile = open(dbfilename, 'w')
+    for key in db:
+        print(key, file=dbfile)
+        for (name, value) in db[key].items():
+            print(name + RECSEP + repr(value), file=dbfile)
+        print(ENDREC, file=dbfile)
+    print(ENDDB, file=dbfile)
+    dbfile.close()
+
+
+def loadDbase(dbfilename=dbfilename):
+    "parse data to reconstruct database"
+    dbfile = open(dbfilename)
+    import sys
+    sys.stdin = dbfile
+    db = {}
+    key = input()
+    while key != ENDDB:
+        rec = {}
+        field = input()
+        while field != ENDREC:
+            name, value = field.split(RECSEP)
+            rec[name] = eval(value)
+            field = input()
+        print (rec)
+        db[key] = rec
+        key = input()
+    return db
+
+if __name__ == '__main__':
+    from initdata import db
+    storeDbase(db)
+    loadDbase(dbfilename)
+
+# bob
+# name=>'Bob Smith'
+# age=>42
+# pay=>30000
+# job=>'dev'
+# endrec.
+# sue
+# name=>'Sue Jones'
+# age=>45
+# pay=>40000
+# job=>'hdw'
+# endrec.
+# tom
+# name=>'Tom'
+# age=>50
+# pay=>0
+# job=>None
+# endrec.
+# enddb.
+```
+
+**工具腳本**
+
+我們通过一下脚本重载数据库的数据：
+```python
+from make_db_file import loadDbase
+db = loadDbase()
+
+for key in db:
+    print(key, '=>\n ',db[key])
+print(db['sue']['name'])
+```
+
+更新数据库
+```python
+from make_db_file import loadDbase, storeDbase
+db = loadDbase()
+db['sue']['pay'] *= 1.10
+db['tom']['name'] = 'Tom Tom'
+storeDbase(db)
+```
+
+### 2.2.Using Pickle Files
+前文提到的格式化的文本文件是有效地，但是它也有一些限制。即使仅仅需要其中一个记录，我们每次也需要完整读取整个数据库文件，而且每次更新都需要重新写回整个数据库到文件。另一方面，文本文件的方法假定它写入文件的数据分隔符不会出现在要存储的数据中：例如，如果字符=>出现在数据中，方案将失败。我们可以通过生成XML文本来代替文本文件中的记录来解决这个问题，使用Python的XML解析工具（本文稍后将要讨论）来重新加载; XML标签将避免与实际数据的文本发生冲突，但创建和解析XML会大大增加程序的复杂性。也许最糟糕的是，格式化的文本文件方案已经很复杂而不是一般的了：它与字典嵌套字典绑定在一起，并且不经过很大的扩展就无法处理其他任何东西。 如果有一种通用工具可以将任何类型的Python数据转换为可以在一个步骤中保存在文件中的格式，那将会很不错。
+
+这就是 `pickle` 模块所做的事情。`pickle` 模块将内存中的Python对象转换为 `序列化的字节流` - 可以写入任何文件类对象的字节串。在序列化字节流的情况下，pickle模块也知道如何重建内存中的原始对象：能够找回完全相同的对象。从某种意义上说，`pickle`模块取代了专有数据格式 - 串行格式对于任何程序来说都是一般而且高效的。 通过 `pickle`，在永久存储对象时不需要手动将对象转换为数据，也不需要手动解析复杂的格式以将其恢复。 `pickle` 在精神上与XML表示类似，但它更具Python特性，并且更易于编码。
