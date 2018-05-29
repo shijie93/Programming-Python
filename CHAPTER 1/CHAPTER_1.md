@@ -445,3 +445,112 @@ db.close()
  * 封装：通过OOP，我们还可以完成诸如名称处理和增加薪酬等细节，我们可以自由地更改方法实现而不会破坏用户。
  * 定制化：与OOP一起，我们有一条自然的成长之路。 可以通过编写新的子类来扩展和定制类（继承），而不必更改或破坏已经运行的代码。
 
+这就是说，在面向对象的概念下，我们通过定制化和重用来编写程序，而不是重写。OOP是Python中的一个选择，坦率地说，有时候它更适合战略性而非策略性任务。当你有时间进行前期规划时，它往往效果最好 - 如果你的用户已经开始猛攻大门，这可能是一种奢侈的方法。但是对于随时间变化的大型系统而言，其代码重用和结构化优势远远超过其学习曲线，并且可大幅缩短开发时间。 即使在我们的简单情况下，我们从 `class` 上获得的可定制性和减少的冗余可能是一个决定性的优势。
+
+**使用类(Classes)**
+
+OOP 在python中能够简单的使用，这得益于python的动态类型的模型。下面的例子将我们的数据库记录实现为类实例而不是字典。
+```python
+class Person:
+    def __init__(self, name, age, pay=0, job=None):
+        self.name = name
+        self.age = age
+        self.pay = pay
+        self.job = job
+
+if __name__ == '__main__':
+    bob = Person('Bob Smith', 42, 30000, 'software')
+    sue = Person('Sue Jones', 45, 40000, 'hardware')
+    print(bob.name, sue.pay)
+    print(bob.name.split()[-1])
+    sue.pay *= 1.10
+    print(sue.pay)
+```
+并没有很多在这个类里-仅仅是一个填充实例数据的构造函数。但是，代表数据库记录已经足够了，并且它已经可以提供工具，例如字典无法使用的`pay`和`job`字段。虽然这还不是一个数据库，但是我们可以将这些对象的实例化装进一个列表或者一个字典中组成一个联合。
+
+**添加行为**
+
+到目前为止，我们的类仅仅包含数据：它用对象的属性来代替字典的 `key`，但是它不能增加我们之前一些数据。为了真正利用类的力量，我们需要添加一些行为。通过在类方法函数中封装一些行为，我们可以使客户端免受更改。通过将数据封装在类中，我们提供了一个自然的地方供读者查找代码。从某种意义上讲，类将记录和处理这些记录的程序结合起来; 方法提供了解释和更新数据的逻辑（我们说它们是面向对象的，因为它们总是处理对象的数据）。下面的例子增加 lastname 和 raise 的逻辑作为类方法，方法使用self参数来访问或更新正在处理的实例（记录）。
+```python
+class Person:
+    def __init__(self, name, age, pay=0, job=None):
+        self.name = name
+        self.age = age
+        self.pay = pay
+        self.job = job
+    def lastName(self):
+        return self.name.split()[-1]
+    def giveRaise(self, percent):
+        self.pay *= (1.0 + percent)
+
+if __name__ == '__main__':
+    bob = Person('Bob Smith', 42, 30000, 'software')
+    sue = Person('Sue Jones', 45, 40000, 'hardware')
+    print(bob.name, sue.pay)
+    print(bob.lastName())
+    sue.giveRaise(.10)
+    print(sue.pay)
+```
+
+**添加继承**
+
+在我们的记录成为永久性之前对其进行最后一次增强：因为它们现在以类的形式实现，所以它们自然支持通过Python中的继承搜索机制进行定制。相对于上一节的 Person 类，提升薪酬是增加 10个百分点。
+```python
+from person import Person
+
+class Manager(Person):
+    def giveRaise(self, percent, bonus=0.1):
+        self.pay *= (1.0 + percent + bonus)
+if __name__ == '__main__':
+    tom = Manager(name='Tom Doe', age=50, pay=50000)
+    print(tom.lastName())
+    tom.giveRaise(.20)
+    print(tom.pay)
+```
+在这里，Manager类出现在它自己的模块文件中，但它也可能被添加到person模块（Python中不需要每个文件只有一个类）。 它从它的超类继承了构造函数和 last-name 的方法，而只是定制了giveRaise方法。 由于此更改是作为新子类添加的，因此原始Person类以及从其生成的所有对象都将继续保持不变。 例如，Bob和Sue继承了原来的 giveRaise 逻辑，但是Tom因为继承它的类而获得了自定义版本。 在OOP中，我们通过 `customizing` 进行编程，而不是通过更改。实际上，使用对象的代码并不需要完全了解raise方法的作用 - 它取决于对象根据创建它的类来做正确的事情。 只要对象支持期望的接口（这里是一个名为giveRaise的方法），它将与调用代码兼容，无论其具体类型如何，即使其方法的工作方式与其他方法不同。如果你已经学过Python，你可能知道这种行为叫多态; 它是该语言的核心属性，并且它解释了很多代码的灵活性。
+
+**重构代码**
+
+在我们继续之前，这里有一些值得注意的编码选择。 其中大多数都强调了Python OOP模型。
+
+**Augmenting methods**
+
+作为第一种选择，请注意我们在上例中引入了一些冗余：在两个地方（两个类中）重新都实现了 giveRaise 方法。 我们也可以通过增加继承的raise方法而不是完全替换它来实现定制的Manager类：
+```python
+class Manager(Person):
+    def giveRaise(self, percent, bonus=0.1):
+        Person.giveRaise(self, percent + bonus)
+```
+这里直接回调了超类版本的方法，显式传递参数 self。我们仍然重新定义了这个方法，但是只是在将10％（默认）添加到传入的百分比后运行通用的版本。这种代码模式可以帮助减少代码冗余而且使得在实践中推广超类构造函数方法变得特别方便。如果您已经学习了Python OOP，那么您知道这种编码方案是可行的，因为我们总是可以通过`实例或类名`来调用方法。 通常，以下内容是等同的，并且可以明确使用这两种形式：
+```python
+instance.method(arg1, arg2)
+class.method(instance, arg1, arg2)
+```
+实际上，第一种形式被映射到第二种形式 - 当通过实例调用时，Python 通过在继承树中搜索方法名称并自动传入实例来确定类。 无论哪种方式，在giveRaise中，self表示作为调用对象的实例。
+
+**显示格式**
+
+我们可以为我们的 `People` 类添加一些运算符重载方法。例如，这里显示的__str__方法可以返回一个字符串，以便在整体打印时为我们的对象提供显示格式 - 比我们获得的实例的默认显示更好
+```python
+class Person:
+    def __str__(self):
+        return '<%s => %s>' % (self.__class__.__name__, self.name)
+
+class Manager(Person):
+
+tom = Manager('Tom Jones', 50)
+print(tom) # <Manager => Tom Jones>
+```
+
+**定制构造函数**
+
+最后，观察到我们没有传递参数 job 在构建 manager 类实例的时候，如果需要，应该是如下的方式：
+```python
+tom = Manager(name='Tom Doe', age=50, pay=50000, job='manager')
+```
+我们之所以在这个例子中传入参数没有包括 job ，是因为它与对象的类是多余的：如果某人是经理，他们的类应该暗示他们的工作头衔 -- manager。 但是，不要将此字段留空，而是为manager提供一个显式构造函数，它会自动填充此字段可能更有意义：
+```python
+class Manager(Person):
+    def __init__(self, name, age, pay):
+        Person.__init__(self, name, age, pay, 'manager')
+```
