@@ -610,4 +610,60 @@ if __name__ == '__main__':
 # <Person => Sue Jones: hardware, 44000.0>
 # <Manager => Tom Doe: manager, 60000.0>
 ```
+注意这个模块的自测循环中的多态：所有三个对象共享构造函数，`lastName`和打印方法，但所调用的 `giveRaise` 方法取决于创建实例的类。随着类层次结构的增长和发展，这种代码重构（重构）很常见。不过 getraise 并不能针对薪资为0的 bob 进行涨薪，我们将为下一个版本留下这样的扩展。好消息是Python的灵活性和可读性使得重构变得容易 - 重构代码很简单快捷。 如果您还没有使用该语言，您会发现Python开发主要是快速，增量和交互式编程的练习，它非常适合实际项目的不断变化的需求。
 
+**添加持久性(Adding Persistence)**
+
+是时候将他们存入 pickle 或者 shelve 了。
+```python
+# make_db_classes.py 
+import shelve
+from person import Person
+from manager import Manager
+bob = Person('Bob Smith', 42, 30000, 'software') 
+sue = Person('Sue Jones', 45, 40000, 'hardware') 
+tom = Manager('Tom Doe', 50, 50000)
+db = shelve.open('class-shelve') db['bob'] = bob
+db['sue'] = sue
+db['tom'] = tom
+db.close()
+```
+下面我们将 shelves 内的数据读取和打印出来
+```python
+# dump_db_classes.py
+import shelve
+db = shelve.open('class-shelve') 
+for key in db:
+    print(key, '=>\n ', db[key].name, db[key].pay)
+bob = db['bob'] 
+print(bob.lastName()) 
+print(db['tom'].lastName())
+```
+> 请注意，我们不需要在这里重新导入Person类，以便从 shelves 中获取它的实例或运行它们的方法。 当实例被 pickle 或 shelves 时，底层的 picking 系统会记录实例属性和足够的信息，以便在稍后提取它们时自动定位它们的类。
+
+下面是更新的逻辑
+```python
+import shelve
+
+db = shelve.open('class-shelve')
+
+sue = db['sue'] 
+sue.giveRaise(.25) 
+db['sue'] = sue
+tom = db['tom'] 
+tom.giveRaise(.20) 
+db['tom'] = tom 
+db.close()
+```
+尽管 shelves 可以存储简单的对象类型，例如列表和词典，但类实例允许我们为存储的项目组合数据和行为。 从某种意义上讲，实例属性和类方法代替了更传统方案中的记录和处理程序。
+
+**其他数据库选项**
+
+此时，我们有一个完整的数据库系统：我们的类同时实现记录数据和记录处理行为，并封装了行为的实现。Python pickle 和 shelve 模块提供了简单的方法来在程序执行之间持久地存储我们的数据库。 这不是一个关系数据库（我们存储为对象，而不是表格），但它对于许多类型的程序已经足够了。
+
+如果我们需要更多功能，我们可以将此应用程序迁移到更强大的工具中。 例如，我们是否应该需要全面的SQL查询支持，还有一些接口允许Python脚本以便携方式与关系数据库（如MySQL，PostgreSQL和Oracle）进行通信。诸如SQLObject和SqlAlchemy之类的ORM（对象关系映射器）提供了另一种方法，它保留了Python类视图，但将其转换为关系数据库表以及从关系数据库表中转换（从某种意义上说，它提供了两全其美的功能），顶级的Python类语法和企业 底层的数据库。此外，开源ZODB系统为Python提供了一个更全面的对象数据库，支持架上缺少的功能，包括并发更新，事务提交和回滚，内存组件更改的自动更新等等。 我们将在第17章探索这些更高级的第三方工具。现在，让我们继续为我们的系统打好基础。
+
+## 4.添加控制台交互
+到目前为止，我们的数据库程序由存储在 shelves 文件中的类实例组成，如前一节所述。 作为存储介质已经足够了，但它需要我们从命令行运行脚本或交互式地键入代码以查看或处理其内容。 对此的改进很简单：只需编写更多可与用户交互的通用程序，无论是从控制台窗口还是从完整的图形界面。
+
+**控制台 shelves 界面**
