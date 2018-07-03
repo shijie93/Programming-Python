@@ -667,3 +667,5 @@ db.close()
 ### GUI Basics
 正如我们将在本书后面看到的那样，Python程序员可以使用各种GUI工具包和构建器：tkinter，wxPython，PyQt，PythonCard，Dabo等。
 
+tkinter是一个轻量级的工具包，因此能很好地与Python等脚本语言相结合; 使用tkinter很容易做到基本的事情，并且能很简单地使用扩展和基于OOP的代码来完成更高级的事情。作为一个额外的好处，tkinter GUI可以在Windows，Linux/Unix和 Macintosh 上移植; 只需将源代码复制到您希望使用GUI的机器上即可。 tkinter没有WxPython或PyQt等大型工具包的所有功能，但这是其相对简单性的主要因素，它使其成为GUI领域入门的理想选择。因为tkinter是为脚本编写的，所以编码GUI很简单。
+
